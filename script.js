@@ -32,44 +32,79 @@ const customIcon = L.divIcon({
     popupAnchor: [0, -10]
 });
 
-// 4. Load Data Logic
-// Menggunakan URL Raw dari GitHub agar data bisa dibaca langsung (CORS enabled)
-const DATA_URL = 'https://raw.githubusercontent.com/adefauzan/CTAID/main/data/data.geojson';
+// 4. Load Data Logic (Multi-Source Configuration)
+// STRUKTUR BARU: Tambahkan file baru cukup dengan menambah object ke dalam array ini
+const DATA_SOURCES = [
+    {
+        id: 'pertama',
+        label: 'Buitenzorg_1921',
+        url: 'https://raw.githubusercontent.com/adefauzan/CTAID/main/data/Buitenzorg_1921.geojson',
+        active: true // Layer ini akan langsung tampil saat load
+    },
+    // Contoh jika nanti ada file kedua (hapus komentar untuk mencoba jika ada file-nya)
+    /*
+    {
+        id: 'tambahan',
+        label: 'Data Tambahan Surabaya',
+        url: 'path/to/surabaya.geojson',
+        active: false
+    } 
+    */
+];
 
-// Main function to load data
+// Inisialisasi Layer Control (Menu untuk toggle layer)
+const layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
+
+// Global counter untuk total statistik
+let totalSites = 0;
+
+// Main function to load ALL data sources
 function loadMapData() {
-    fetch(DATA_URL)
+    // Reset counter
+    totalSites = 0;
+    const promises = DATA_SOURCES.map(source => fetchSource(source));
+
+    // Tunggu semua data selesai dimuat (opsional: bisa tambahkan loading spinner di sini)
+    Promise.allSettled(promises).then(() => {
+        updateStatsUI();
+        console.log("Semua sumber data telah diproses.");
+    });
+}
+
+// Fungsi fetch individual per source
+function fetchSource(source) {
+    return fetch(source.url)
         .then(response => {
-            if (!response.ok) throw new Error("File not found");
+            if (!response.ok) throw new Error(`File ${source.url} not found`);
             return response.json();
         })
         .then(geojsonData => {
-            renderGeoJson(geojsonData);
+            addLayerToMap(geojsonData, source);
+            // Tambahkan ke total statistik
+            if (geojsonData.features) {
+                totalSites += geojsonData.features.length;
+            }
         })
         .catch(error => {
-            console.warn("Gagal memuat main/data.json, menggunakan data sample untuk preview:", error);
-            // Fallback to sample data if fetch fails (e.g. locally or preview mode)
-            renderGeoJson(sampleData);
+            console.warn(`Gagal memuat ${source.label}:`, error);
+            // Jika ini adalah sumber utama dan gagal, gunakan sample data
+            if (source.id === 'utama') {
+                console.log("Menggunakan Fallback Sample Data...");
+                addLayerToMap(sampleData, { label: "Sample Data (Fallback)", active: true });
+                totalSites += sampleData.features.length;
+            }
         });
 }
 
-// Function to render GeoJSON on Map
-function renderGeoJson(data) {
-    // Update statistic count
-    const count = data.features ? data.features.length : 0;
-    const statElement = document.getElementById('stat-count');
-    if (statElement) {
-        statElement.innerText = count;
-    }
-
-    L.geoJSON(data, {
-        // Transform points to custom icons
+// Fungsi menambahkan layer GeoJSON ke Peta & Control
+function addLayerToMap(data, sourceConfig) {
+    // 1. Buat Layer GeoJSON (tapi jangan di-add ke map langsung)
+    const geoJsonLayer = L.geoJSON(data, {
         pointToLayer: function (feature, latlng) {
             return L.marker(latlng, { icon: customIcon });
         },
-        // Bind popup to each feature
         onEachFeature: function (feature, layer) {
-            // Validate properties to prevent undefined
+            // ... (Kode Popup sama seperti sebelumnya) ...
             const nama = feature.properties.nama || "Tanpa Nama";
             const tahun = feature.properties.tahun_wafat || "?";
             const link = feature.properties.link_arsip || "#";
@@ -89,42 +124,41 @@ function renderGeoJson(data) {
             `;
             layer.bindPopup(popupContent);
         }
-    }).addTo(map);
+    });
+
+    // 2. Buat Marker Cluster Group (Solusi untuk 1000+ data)
+    const markers = L.markerClusterGroup({
+        // Kustomisasi ikon cluster agar sesuai tema kuning/hitam
+        iconCreateFunction: function(cluster) {
+            return L.divIcon({ 
+                html: '<div><span>' + cluster.getChildCount() + '</span></div>', 
+                className: 'marker-cluster-custom', 
+                iconSize: L.point(40, 40) 
+            });
+        },
+        showCoverageOnHover: false, // Matikan area biru saat hover agar lebih bersih
+        spiderfyOnMaxZoom: true     // Pecah marker jika di zoom maksimal masih bertumpuk
+    });
+
+    // 3. Masukkan data GeoJSON ke dalam Cluster Group
+    markers.addLayer(geoJsonLayer);
+
+    // 4. Tambahkan Cluster Group ke Layer Control & Peta
+    layerControl.addOverlay(markers, `<span class="text-xs font-bold">${sourceConfig.label}</span>`);
+
+    if (sourceConfig.active) {
+        map.addLayer(markers);
+    }
 }
 
-// --- SAMPLE DATA (Fallback) ---
-const sampleData = {
-    "type": "FeatureCollection",
-    "features": [
-        {
-            "type": "Feature",
-            "properties": {
-                "nama": "Tanah Abang (Makam Tua)",
-                "tahun_wafat": "1790",
-                "link_arsip": "https://www.kitlv.nl"
-            },
-            "geometry": { "type": "Point", "coordinates": [106.8135, -6.1878] }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "nama": "Makam Peneleh Surabaya",
-                "tahun_wafat": "1840",
-                "link_arsip": "https://www.kitlv.nl"
-            },
-            "geometry": { "type": "Point", "coordinates": [112.7378, -7.2575] }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "nama": "Bukit Sentiong Semarang",
-                "tahun_wafat": "1810",
-                "link_arsip": "https://www.kitlv.nl"
-            },
-            "geometry": { "type": "Point", "coordinates": [110.4203, -6.9932] }
-        }
-    ]
-};
+// Update UI Statistik
+function updateStatsUI() {
+    const statElement = document.getElementById('stat-count');
+    if (statElement) {
+        // Animasi sederhana angka
+        statElement.innerText = totalSites;
+    }
+}
 
 // 5. Interaction Logic
 
