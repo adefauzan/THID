@@ -72,7 +72,6 @@ function updateFloatingYear() {
     
     runGlobalFilter();
 }
-
 // 6. Pengambilan Data dari GitHub Database
 async function loadDatabase() {
     try {
@@ -90,7 +89,8 @@ async function loadDatabase() {
 
         // Mengambil isi data dari seluruh file secara paralel
         const allGeoData = await Promise.all(geojsonFiles.map(async file => {
-            const r = await fetch(file.download_url);
+            // Bypass cache GitHub dengan menempelkan timestamp agar data yang ditarik selalu terbaru
+            const r = await fetch(file.download_url + '?v=' + new Date().getTime());
             return await r.json();
         }));
 
@@ -102,9 +102,10 @@ async function loadDatabase() {
                 }),
                 onEachFeature: (feature, layer) => {
                     const props = feature.properties || {};
+                    
                     // Deteksi kategori/jenis objek
                     const kategori = props.Object || props.kategori || props.tipe || "Lainnya";
-                    const nama = props.Name || props.nama || "Objek Tanpa name";
+                    const nama = props.Name || props.nama || props.name || "Objek Tanpa Name";
                     
                     // Deteksi tahun (prioritas pada atribut tahun/year)
                     let thnRaw = props.MapYear || props.year || props.Year || props.Tahun;
@@ -113,13 +114,35 @@ async function loadDatabase() {
                     uniqueCategories.add(kategori);
                     allMapFeatures.push({ layer, kategori, nama, tahun });
 
+                    // Daftar atribut yang TIDAK DITAMPILKAN di dalam tabel (case-insensitive)
+                    const ignoredKeys = ['name', 'nama', 'fid'];
+
                     // Desain Konten Popup
                     let popupHtml = `<div class="popup-title">${nama}</div><table class="popup-table">`;
+                    
                     for (let key in props) {
-                        if(key.toLowerCase() !== 'nama') {
-                            popupHtml += `<tr><td class="popup-label">${key}</td><td>${props[key]}</td></tr>`;
+                        // Lewati iterasi jika properti bukan milik objek itu sendiri
+                        if (!props.hasOwnProperty(key)) continue;
+
+                        const lowerKey = key.toLowerCase();
+                        
+                        // Lewati kunci yang masuk dalam daftar ignoredKeys
+                        if (ignoredKeys.includes(lowerKey)) continue;
+
+                        let val = props[key];
+
+                        // Penanganan nilai kosong agar tidak memicu error
+                        if (val === null || val === undefined) {
+                            val = "-";
+                        } 
+                        // Merapikan nilai angka desimal kecil/notasi ilmiah dari QGIS
+                        else if (typeof val === 'number') {
+                            val = val < 0.0001 && val > 0 ? val.toExponential(3) : val;
                         }
+
+                        popupHtml += `<tr><td class="popup-label">${key}</td><td>${val}</td></tr>`;
                     }
+                    
                     layer.bindPopup(popupHtml + `</table>`, { maxWidth: 280 });
                 }
             }).addTo(map);
@@ -136,7 +159,6 @@ async function loadDatabase() {
         filterListDiv.innerHTML = `<p style="color:#e74c3c; font-size:12px;">${err.message}</p>`;
     }
 }
-
 // 7. Sistem Filter Global (Waktu + Cari + Kategori)
 function runGlobalFilter() {
     const selectedYear = parseInt(yearSlider.value);
