@@ -166,7 +166,9 @@ function runGlobalFilter() {
     const checkedCats = Array.from(document.querySelectorAll('.filter-item input:checked')).map(i => i.value);
 
     allMapFeatures.forEach(item => {
-        const matchSearch = item.name.toLowerCase().includes(searchTerm);
+        // PERBAIKAN: Ubah item.name menjadi item.nama dan bungkus dengan String()
+        const matchSearch = String(item.nama).toLowerCase().includes(searchTerm);
+        
         const matchCat = checkedCats.includes(item.kategori);
         // Tampilkan jika tahun objek <= tahun slider, atau jika tidak ada info tahun
         const matchYear = item.tahun ? (item.tahun <= selectedYear) : true;
@@ -178,7 +180,6 @@ function runGlobalFilter() {
         }
     });
 }
-
 // 8. Render UI Filter Kategori
 function renderFilters() {
     filterListDiv.innerHTML = '';
