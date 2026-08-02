@@ -114,9 +114,9 @@ async function loadDatabase() {
                     allMapFeatures.push({ layer, kategori, nama, tahun });
 
                     // Desain Konten Popup
-                    let popupHtml = `<div class="popup-title">${nama}</div><table class="popup-table">`;
+                    let popupHtml = `<div class="popup-title">${Name}</div><table class="popup-table">`;
                     for (let key in props) {
-                        if(key.toLowerCase() !== 'nama') {
+                        if(key.toLowerCase() !== 'name') {
                             popupHtml += `<tr><td class="popup-label">${key}</td><td>${props[key]}</td></tr>`;
                         }
                     }
