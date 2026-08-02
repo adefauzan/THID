@@ -104,7 +104,7 @@ async function loadDatabase() {
                     const props = feature.properties || {};
                     // Deteksi kategori/jenis objek
                     const kategori = props.Object || props.kategori || props.tipe || "Lainnya";
-                    const Name = props.Name || props.Name || "Objek Tanpa name";
+                    const nama = props.Name || props.Name || "Objek Tanpa name";
                     
                     // Deteksi tahun (prioritas pada atribut tahun/year)
                     let thnRaw = props.MapYear || props.year || props.Year || props.Tahun;
@@ -116,7 +116,7 @@ async function loadDatabase() {
                     // Desain Konten Popup
                     let popupHtml = `<div class="popup-title">${Name}</div><table class="popup-table">`;
                     for (let key in props) {
-                        if(key.toLowerCase() !== 'name') {
+                        if(key.toLowerCase() !== 'Name') {
                             popupHtml += `<tr><td class="popup-label">${key}</td><td>${props[key]}</td></tr>`;
                         }
                     }
