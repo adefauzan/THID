@@ -104,7 +104,7 @@ async function loadDatabase() {
                     const props = feature.properties || {};
                     // Deteksi kategori/jenis objek
                     const kategori = props.Object || props.kategori || props.tipe || "Lainnya";
-                    const nama = props.Name || props.Name || "Objek Tanpa name";
+                    const nama = props.Name || props.nama || "Objek Tanpa name";
                     
                     // Deteksi tahun (prioritas pada atribut tahun/year)
                     let thnRaw = props.MapYear || props.year || props.Year || props.Tahun;
