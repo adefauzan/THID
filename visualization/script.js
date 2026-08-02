@@ -111,10 +111,10 @@ async function loadDatabase() {
                     let tahun = thnRaw ? parseInt(thnRaw) : null;
 
                     uniqueCategories.add(kategori);
-                    allMapFeatures.push({ layer, kategori, Name, MapYear });
+                    allMapFeatures.push({ layer, kategori, nama, tahun });
 
                     // Desain Konten Popup
-                    let popupHtml = `<div class="popup-title">${Name}</div><table class="popup-table">`;
+                    let popupHtml = `<div class="popup-title">${nama}</div><table class="popup-table">`;
                     for (let key in props) {
                         if(key.toLowerCase() !== 'Name') {
                             popupHtml += `<tr><td class="popup-label">${key}</td><td>${props[key]}</td></tr>`;
