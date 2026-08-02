@@ -116,7 +116,7 @@ async function loadDatabase() {
                     // Desain Konten Popup
                     let popupHtml = `<div class="popup-title">${nama}</div><table class="popup-table">`;
                     for (let key in props) {
-                        if(key.toLowerCase() !== 'Name') {
+                        if(key.toLowerCase() !== 'nama') {
                             popupHtml += `<tr><td class="popup-label">${key}</td><td>${props[key]}</td></tr>`;
                         }
                     }
