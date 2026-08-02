@@ -104,10 +104,10 @@ async function loadDatabase() {
                     const props = feature.properties || {};
                     // Deteksi kategori/jenis objek
                     const kategori = props.Object || props.kategori || props.tipe || "Lainnya";
-                    const nama = props.nama || props.Nama || "Objek Tanpa Nama";
+                    const name = props.name || props.name || "Objek Tanpa Nama";
                     
                     // Deteksi tahun (prioritas pada atribut tahun/year)
-                    let thnRaw = props.Map_Year || props.year || props.Year || props.Tahun;
+                    let thnRaw = props.MapYear || props.year || props.Year || props.Tahun;
                     let tahun = thnRaw ? parseInt(thnRaw) : null;
 
                     uniqueCategories.add(kategori);
@@ -116,7 +116,7 @@ async function loadDatabase() {
                     // Desain Konten Popup
                     let popupHtml = `<div class="popup-title">${nama}</div><table class="popup-table">`;
                     for (let key in props) {
-                        if(key.toLowerCase() !== 'nama') {
+                        if(key.toLowerCase() !== 'name') {
                             popupHtml += `<tr><td class="popup-label">${key}</td><td>${props[key]}</td></tr>`;
                         }
                     }
@@ -144,7 +144,7 @@ function runGlobalFilter() {
     const checkedCats = Array.from(document.querySelectorAll('.filter-item input:checked')).map(i => i.value);
 
     allMapFeatures.forEach(item => {
-        const matchSearch = item.nama.toLowerCase().includes(searchTerm);
+        const matchSearch = item.name.toLowerCase().includes(searchTerm);
         const matchCat = checkedCats.includes(item.kategori);
         // Tampilkan jika tahun objek <= tahun slider, atau jika tidak ada info tahun
         const matchYear = item.tahun ? (item.tahun <= selectedYear) : true;
